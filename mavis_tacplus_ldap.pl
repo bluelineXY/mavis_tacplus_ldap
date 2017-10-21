@@ -360,7 +360,7 @@ sub find_userfromalias($$){
 	my $mesg =  $ldap->search(base => $_[0], scope=>'subtree', filter => $filter, deref => 'never',);
 	my $uid=undef;
 	if($mesg->count() > 0 && $mesg->code == 0){
-		my $realDN =  $mesg->entry(0)->get_value('aliasedObjectName');
+		my $realDN = $mesg->entry(0)->get_value('aliasedObjectName');
 		$mesg = $ldap->search(base => $realDN, scope=>'base', filter => '(objectClass=*)', attrs => ['uid']);
 		if($mesg->count() > 0 && $mesg->code == 0){
 			$uid = $mesg->entry(0)->get_value('uid');
@@ -370,7 +370,6 @@ sub find_userfromalias($$){
 	} else {
 		goto fatal;
 	}	
-		
 	return $uid;
 }
 
@@ -450,8 +449,7 @@ while ($in = <>) {
 	
 	if(defined($flag_use_alias)) {
 		$AV_A_USER_ORIG = $V[AV_A_USER];
-		my $rw_search = sprintf($LDAP_ALIASBASE,$V[AV_A_USER]);
-       	$V[AV_A_USER] = find_userfromalias($LDAP_ALIASBASE,$V[AV_A_USER]);
+		$V[AV_A_USER] = find_userfromalias($LDAP_ALIASBASE,$V[AV_A_USER]);
 	}
 
 	$mesg = $ldap->search(base => $LDAP_BASE,
