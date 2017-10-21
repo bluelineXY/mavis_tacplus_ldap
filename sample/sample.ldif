@@ -4,7 +4,7 @@ dn: dc=example,dc=com
 objectClass: organization
 objectClass: dcObject
 objectClass: top
-dc: mailway
+dc: example
 o: local
 
 
