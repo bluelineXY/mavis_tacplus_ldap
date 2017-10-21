@@ -352,15 +352,13 @@ sub expand_memberof($) {
 
 
 sub find_userfromalias($$){
-	my $user = $_[1];
-	my $mesg =  $ldap->search(base => $_[0], scope=>'base', filter => '(objectclass=*)', deref => 'always' );
+	my $sb = printf( $_[0], $_[1]);
+	my $mesg =  $ldap->search(base => $_[0], scope=>'base', filter => '(objectclass=*)', deref => 'always',  attrs=>['uid'] );
 	my $uid=undef;
-	if($mesg->count() > 0){
-		my $entry = $mesg->entry(0);
-		$uid =  $entry->get_value('uid');
-		print $uid."\r\n";
+	if($mesg->count() > 0 && $mesg->errno == 0){
+		$uid =  $mesg->entry(0)->get_value('uid');
 	} else {
-			print "NO MAP FOUND \r\n";
+		print "NO MAP FOUND \r\n";
 	}
 	return $uid;
 }
@@ -438,10 +436,12 @@ while ($in = <>) {
 		$V[AV_A_USER_RESPONSE] = $mesg->error . " (" . __LINE__ . ")";
 		goto fatal;
 	}
-	$AV_A_USER_ORIG = $V[AV_A_USER];
-   	my $rw_search = sprintf("uid=%s,ou=anonuser,dc=mailway,dc=org",$V[AV_A_USER]);
-        $V[AV_A_USER] = find_userfromalias($rw_search,$V[AV_A_USER]);
-
+	
+	if(defined($flag_use_alias)) {
+		$AV_A_USER_ORIG = $V[AV_A_USER];
+		my $rw_search = sprintf($LDAP_ALIASBASE,$V[AV_A_USER]);
+        	$V[AV_A_USER] = find_userfromalias($rw_search,$V[AV_A_USER]);
+	}
 
 	$mesg = $ldap->search(base => $LDAP_BASE,
 						  filter => sprintf ($V[AV_A_TACTYPE] eq AV_V_TACTYPE_CHPW ? $LDAP_FILTER_CHPW
@@ -654,7 +654,9 @@ fatal:
 	goto bye;
 
 bye:
-	$V[AV_A_USER] = $AV_A_USER_ORIG;
+	if(defined($flag_use_alias)){
+		$V[AV_A_USER] = $AV_A_USER_ORIG;
+	}
 	if (!defined($flag_cacheconn) && defined($ldap)) {
 		$ldap->unbind;
 		$ldap->disconnect;
