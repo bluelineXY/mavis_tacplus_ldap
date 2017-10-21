@@ -213,7 +213,7 @@ my $LDAP_BASE			= 'ou=staff,dc=example,dc=com';
 my $LDAP_SCOPE			= 'sub';
 my $LDAP_FILTER			= '(uid=%s)';
 my $LDAP_FILTER_CHPW		= '(uid=%s)';
-my $LDAP_ALIASBASE		= $LDAP_BASE;
+my $LDAP_ALIASBASE		= undef;
 my $use_tls			= undef;
 my $flag_chpass			= undef;
 my $flag_pwpolicy		= undef;
@@ -265,6 +265,7 @@ $LDAP_BASE			= $ENV{'LDAP_BASE'} if exists $ENV{'LDAP_BASE'};
 $LDAP_FILTER		= $ENV{'LDAP_FILTER'} if exists $ENV{'LDAP_FILTER'};
 $LDAP_FILTER_CHPW	= $ENV{'LDAP_FILTER_CHPW'} if exists $ENV{'LDAP_FILTER_CHPW'};
 @LDAP_BIND			= ($ENV{'LDAP_USER'}, password => $ENV{'LDAP_PASSWD'}) if (exists $ENV{'LDAP_USER'} && exists $ENV{'LDAP_PASSWD'});
+$LDAP_ALIASBASE 	= $ENV{'LDAP_ALIASBASE'} if exists $ENV{'LDAP_ALIASBASE'};
 $flag_use_memberof		= $ENV{'USE_MEMBEROF'} if exists $ENV{'USE_MEMBEROF'};
 $use_tls			= $ENV{'USE_TLS'} if exists $ENV{'USE_TLS'};
 $tacacsGroupPrefix	= $ENV{'TACACS_GROUP_PREFIX'} if exists $ENV{'TACACS_GROUP_PREFIX'};
@@ -275,6 +276,9 @@ $require_tacacsGroupPrefix = $ENV{'REQUIRE_TACACS_AD_GROUP_PREFIX'} if exists $E
 $require_tacacsGroupPrefix = $ENV{'REQUIRE_AD_GROUP_PREFIX'} if exists $ENV{'REQUIRE_AD_GROUP_PREFIX'};
 $unlimit_ad_group_membership = $ENV{'UNLIMIT_AD_GROUP_MEMBERSHIP'} if exists $ENV{'UNLIMIT_AD_GROUP_MEMBERSHIP'};
 $expand_ad_group_membership = $ENV{'EXPAND_AD_GROUP_MEMBERSHIP'} if exists $ENV{'EXPAND_AD_GROUP_MEMBERSHIP'};
+if (!defined($LDAP_ALIASBASE)){
+	$LDAP_ALIASBASE = $LDAP_BASE;
+}
 
 unless (defined $flag_use_memberof) {
 	foreach my $v ('TACACS_GROUP_PREFIX', 'REQUIRE_TACACS_GROUP_PREFIX', 'UNLIMIT_AD_GROUP_MEMBERSHIP',
@@ -352,14 +356,21 @@ sub expand_memberof($) {
 
 
 sub find_userfromalias($$){
-	my $sb = printf( $_[0], $_[1]);
-	my $mesg =  $ldap->search(base => $_[0], scope=>'base', filter => '(objectclass=*)', deref => 'always',  attrs=>['uid'] );
+	my $filter = sprintf("(&(objectClass=alias)(uid=%s))", $_[1]);
+	my $mesg =  $ldap->search(base => $_[0], scope=>'subtree', filter => $filter, deref => 'never',);
 	my $uid=undef;
-	if($mesg->count() > 0 && $mesg->errno == 0){
-		$uid =  $mesg->entry(0)->get_value('uid');
+	if($mesg->count() > 0 && $mesg->code == 0){
+		my $realDN =  $mesg->entry(0)->get_value('aliasedObjectName');
+		$mesg = $ldap->search(base => $realDN, scope=>'base', filter => '(objectClass=*)', attrs => ['uid']);
+		if($mesg->count() > 0 && $mesg->code == 0){
+			$uid = $mesg->entry(0)->get_value('uid');
+		} else {
+			goto fatal;
+		}
 	} else {
-		print "NO MAP FOUND \r\n";
-	}
+		goto fatal;
+	}	
+		
 	return $uid;
 }
 
@@ -440,7 +451,7 @@ while ($in = <>) {
 	if(defined($flag_use_alias)) {
 		$AV_A_USER_ORIG = $V[AV_A_USER];
 		my $rw_search = sprintf($LDAP_ALIASBASE,$V[AV_A_USER]);
-        	$V[AV_A_USER] = find_userfromalias($rw_search,$V[AV_A_USER]);
+       	$V[AV_A_USER] = find_userfromalias($LDAP_ALIASBASE,$V[AV_A_USER]);
 	}
 
 	$mesg = $ldap->search(base => $LDAP_BASE,
