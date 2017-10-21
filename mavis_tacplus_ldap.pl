@@ -114,6 +114,12 @@ FLAG_USE_MEMBEROF
 
 FLAG_AUTHORIZE_ONLY
 	Don't attempt to authenticate users.
+	
+LDAP_ALIASBASE
+	Search base for the alias function (default = LDAP_BASE)
+
+FLAG_USE_ALIAS
+	enable alias function
 
 ########
 
@@ -199,21 +205,23 @@ use lib '/usr/local/lib/mavis/';
 use strict;
 use Mavis;
 
-my $LDAP_SERVER_TYPE	= 'tacacs_schema';
+my $LDAP_SERVER_TYPE		= 'tacacs_schema';
 my $LDAP_MASTER			= ['ldap01'];
 my $LDAP_HOSTS			= ['ldap03', 'ldap04', 'ldap01', 'ldap02'];
 my @LDAP_BIND			= ();
 my $LDAP_BASE			= 'ou=staff,dc=example,dc=com';
 my $LDAP_SCOPE			= 'sub';
 my $LDAP_FILTER			= '(uid=%s)';
-my $LDAP_FILTER_CHPW	= '(uid=%s)';
-my $use_tls				= undef;
+my $LDAP_FILTER_CHPW		= '(uid=%s)';
+my $LDAP_ALIASBASE		= $LDAP_BASE;
+my $use_tls			= undef;
 my $flag_chpass			= undef;
 my $flag_pwpolicy		= undef;
 my $flag_cacheconn		= undef;
 my $flag_fallthrough	= undef;
 my $flag_use_memberof	= undef;
 my $flag_authorize_only	= undef;
+my $flag_use_alias	= undef;
 
 my $tacacsGroupPrefix	= 'tacacs';
 my $require_tacacsGroupPrefix = undef;
@@ -227,7 +235,8 @@ $flag_pwpolicy			= $ENV{'FLAG_PWPOLICY'} if exists $ENV{'FLAG_PWPOLICY'};
 $flag_cacheconn			= $ENV{'FLAG_CACHE_CONNECTION'} if exists $ENV{'FLAG_CACHE_CONNECTION'};
 $flag_fallthrough		= $ENV{'FLAG_FALLTHROUGH'} if exists $ENV{'FLAG_FALLTHROUGH'};
 $flag_use_memberof		= $ENV{'FLAG_USE_MEMBEROF'} if exists $ENV{'FLAG_USE_MEMBEROF'};
-$flag_authorize_only	= $ENV{'FLAG_AUTHORIZE_ONLY'} if exists $ENV{'FLAG_AUTHORIZE_ONLY'};
+$flag_authorize_only		= $ENV{'FLAG_AUTHORIZE_ONLY'} if exists $ENV{'FLAG_AUTHORIZE_ONLY'};
+$flag_use_alias			= $ENV{'FLAG_USE_ALIAS'} if exists $ENV{'FLAG_USE_ALIAS'};
 
 print STDERR "Default server type is \'$LDAP_SERVER_TYPE\'. You *may* need to change that to 'generic' or 'microsoft'.\n" unless exists $ENV{'LDAP_SERVER_TYPE'};
 
