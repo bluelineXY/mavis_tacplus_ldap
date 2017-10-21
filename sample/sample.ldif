@@ -1,0 +1,61 @@
+version: 1
+
+dn: dc=example,dc=com
+objectClass: organization
+objectClass: dcObject
+objectClass: top
+dc: mailway
+o: local
+
+
+
+dn: ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=people,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=anonuser,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: anonuser
+
+
+dn: cn=tacacsadmin,ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: tacacsadmin
+member: uid=user2,ou=people,dc=example,dc=com
+member: uid=user1,ou=people,dc=example,dc=com
+
+dn: uid=user1,ou=people,dc=example,dc=com
+objectClass: person
+objectClass: top
+objectClass: shadowAccount
+cn: U1
+sn: U1
+uid: user1
+userPassword:: dGVzdDEyMw==
+
+dn: uid=user2,ou=people,dc=example,dc=com
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: top
+objectClass: shadowAccount
+cn: U2
+sn: U2
+uid: user2
+userPassword:: dGVzdDEyMw==
+
+dn: uid=cdefg,ou=anonuser,dc=example,dc=com
+objectClass: extensibleObject
+objectClass: top
+objectClass: alias
+aliasedObjectName: uid=user2,ou=people,dc=example,dc=com
+uid: cdefg
+
